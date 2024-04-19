@@ -1,6 +1,12 @@
 ----------
 CHANGELOG
 ----------
+ v 2.9.3 (19 April 2024)
+  - Fix: Submit event handler in FilteredSelectMultiple removes selected options from tabular_permissions #27 (@DemidovEvg)
+  - Fix error caused by non-existent model.label #26 (@SteMazzO)
+  - fix: reminder_perms not work with extra default_permissions #29 (@DemidovEvg)
+
+
  v 2.9.2 (24 July 2023)
   - Update readme to show how to run tests
   - update demo project to use Django latest releases

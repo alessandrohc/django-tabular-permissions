@@ -1,2 +1,13 @@
 .idea
 *.pyc
+__pycache__/
+
+# build artifacts
+build/
+dist/
+*.egg-info/
+*.egg
+
+# environments
+.venv/
+venv/

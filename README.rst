@@ -2,23 +2,6 @@ django-tabular-permissions
 ##########################
 Display django permissions in a user friendly, translatable and customizable widget .
 
-.. image:: https://rasystems.io/static/images/tabular_permissions/tp_1.png
-    :target: https://rasystems.io/static/images/tabular_permissions/tp_1.png
-    :alt: Basic demo
-
-RTL and localized
-
-.. image:: https://rasystems.io/static/images/tabular_permissions/tp_ar.png
-    :target: https://rasystems.io/static/images/tabular_permissions/tp_ar.png
-    :alt: RTL and localized
-
-With Custom permission behaviour
-
-.. image:: https://rasystems.io/static/images/tabular_permissions/tp_extra.png
-    :target: https://rasystems.io/static/images/tabular_permissions/tp_extra.png
-    :alt: With Custom permission
-
-
 This is an independent fork maintained by `Alessandro Hecht <https://github.com/alessandrohc>`_
 at `alessandrohc/django-tabular-permissions <https://github.com/alessandrohc/django-tabular-permissions>`_.
 It is not published on PyPI — install it from the repository (see Installation below).
@@ -77,6 +60,7 @@ Tabular permissions possible configurations and their default::
 
     TABULAR_PERMISSIONS_CONFIG = {
         'template': 'tabular_permissions/admin/tabular_permissions.html',
+        'extra_permissions': {},
         'exclude': {
             'override': False,
             'apps': [],
@@ -94,6 +78,18 @@ Tabular permissions possible configurations and their default::
 `template`
   the template which contains the permissions table, you can always customize this template by extending or overriding.
   Notice that there is a `style` block which you can override to easily edit the css.
+
+`extra_permissions`
+  *(fork addition)* A dict of ``{permission_name: label}`` describing permissions that are
+  not tied to a model's ``Meta.permissions`` but should still get a column in the table.
+
+  The package itself only exposes the value as ``tabular_permissions.app_settings.EXTRA_PERMISSIONS``
+  and ships a no-op hook — ``TabularPermissionsWidget.get_extra_permissions(model, ct_id, codename_id_map)``
+  returns an empty tuple. To make the columns render, subclass the widget and override that hook,
+  returning a list of dicts with ``codename``, ``verbose_name`` and ``c_perm_id`` keys.
+
+  See ``plus_base.xpublique.xadmin_site.widgets.permission.TabularPermissionTransferWidget``
+  in the instanet project for a working implementation.
 
 `exclude`
   Control which apps, models to show in the permissions table.

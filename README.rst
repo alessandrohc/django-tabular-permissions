@@ -19,9 +19,14 @@ With Custom permission behaviour
     :alt: With Custom permission
 
 
+This is an independent fork maintained by `Alessandro Hecht <https://github.com/alessandrohc>`_
+at `alessandrohc/django-tabular-permissions <https://github.com/alessandrohc/django-tabular-permissions>`_.
+It is not published on PyPI — install it from the repository (see Installation below).
+See `Credits`_ for the upstream authors.
+
 Version
 -------
-2.9.1 (June 7 2022)
+3.0.0 (25 September 2024)
 
 Features:
 ---------
@@ -38,9 +43,17 @@ Features:
 
 Installation
 ------------
-You can install `django-tabular-permissions` via Pypi::
+Install this fork straight from the repository::
 
-    pip install django-tabular-permissions
+    pip install git+https://github.com/alessandrohc/django-tabular-permissions.git@master
+
+Pin a tag for a reproducible install::
+
+    pip install git+https://github.com/alessandrohc/django-tabular-permissions.git@v3.0.0
+
+.. note::
+   ``pip install django-tabular-permissions`` pulls the **original** package from PyPI,
+   not this fork.
 
 
 and add "tabular_permissions" to your INSTALLED_APPS setting (at any place after `django.contrib.auth`) ::
@@ -146,18 +159,24 @@ To run the demo project in the repo on your local you need
 
 1. Clone the repo;
 2. Create a virtualenv
-3. `pip install django-tabular-permissions`
+3. `pip install -e .`
 4. `python manage.py migrate`
 5. `python manage.py runserver`
 
 Enjoy and feel free to report any bugs or make pull requests.
 
 
-Cross Reference
----------------
+.. _Credits:
 
-If you like this package, chances are you may like those packages too!
+Credits
+-------
 
-`Django Slick Reporting <https://github.com/ra-systems/django-slick-reporting>`_ Powerful and Efficient reporting engine with Charting capabilities.
+This fork stands on the work of others:
 
-`Django Ra ERP Framework <https://github.com/ra-systems/RA>`_ A framework to build business solutions with ease.
+* `Ramez Ashraf <https://github.com/RamezIssac>`_ — original author of
+  ``django-tabular-permissions`` and copyright holder (see LICENSE).
+* `alexsilva <https://github.com/alexsilva>`_ — the bulk of this fork's changes
+  (extra permissions, column selection, pt-BR locale, multiple-widget fixes).
+* `Alessandro Hecht <https://github.com/alessandrohc>`_ — current maintainer.
+
+Licensed under the BSD License, unchanged from upstream.

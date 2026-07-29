@@ -10,17 +10,17 @@ See `Credits`_ for the upstream authors.
 
 Version
 -------
-3.0.0 (25 September 2024)
+3.1.0
 
 Features:
 ---------
 * Permissions and their relevant app and models names are displayed in the active language.
 * Permissions are displayed in a table that contain the default model permissions **plus** any custom permissions.
-* Supports view permission (started with Django 2).
+* Supports view permission.
 * Customize which apps, models to show in the permissions table. You can also set a exclude function for high-end customization.
 * RTL ready, Bootstrap ready.
 * Easy customize-able look.
-* Python 2.7, 3.6, 3.7, 3.8, 3.9 , 3.10. Django 1.11, 2.1, 2.2, 3.0, 3.1, 3.2 , 4.0, 4.1, 4.2
+* Python 3.10, 3.11, 3.12, 3.13. Django 4.2, 5.0, 5.1, 5.2.
 * Default `FilteredSelectMultiple` widget will appear only if you have custom permissions that are not model related (ie directly created by code or hand)
 
 
@@ -33,7 +33,7 @@ Install this fork straight from the repository::
 
 Pin a tag for a reproducible install::
 
-    pip install git+https://github.com/alessandrohc/django-tabular-permissions.git@v3.0.0
+    pip install git+https://github.com/alessandrohc/django-tabular-permissions.git@v3.1.0
 
 .. note::
    ``pip install django-tabular-permissions`` pulls the **original** package from PyPI,
@@ -146,8 +146,11 @@ Located at 'static/tabular_permissions/tabular_permissions.js', it have 2 respon
 
 Compatibility:
 --------------
-Current version support from Python 2.7 and up to Python 3.10, and Django from 1.11 to 4.1
-For Django < 1.11, use django-tabular-permissions 1.0.9.
+This version supports Python 3.10 to 3.13 and Django 4.2 to 5.2. The combinations are
+exercised on every push; Django 4.2 and 5.0 do not support Python 3.13, so those two pairs
+are excluded from the matrix.
+
+For older interpreters or Django releases, use a 3.0.x tag.
 
 Demo:
 -----
@@ -173,9 +176,23 @@ Then run::
 
     python runtests.py
 
+A single module, class or test can be targeted by passing it as an argument::
+
+    python runtests.py tests.test_tabular_permissions.test_widget_render
+
 With Coverage ::
 
-        coverage run runtests.py
+        coverage run --source=../tabular_permissions runtests.py
+        coverage report -m
+
+What the suite does not cover
+.............................
+
+The behaviour implemented in ``tabular_permissions.js`` is not exercised: the select-all
+checkboxes and the submit handler that copies the table state into the plain widget both need
+a real browser. The suite covers everything the server produces, including the ids, classes
+and data attributes the script keys off, so a rename that would break the script fails a test.
+The clicking itself does not.
         coverage html
 
 

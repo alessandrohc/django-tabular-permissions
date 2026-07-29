@@ -1,6 +1,53 @@
 ----------
 CHANGELOG
 ----------
+ v 3.1.0 (29 July 2026)
+  Packaging
+  - Added ``pyproject.toml`` with a PEP 517 build backend and removed ``setup.py``. The
+    metadata lives in one place and the version is read from ``tabular_permissions.__version__``,
+    which previously disagreed with the one declared for the distribution.
+  - Declared ``requires-python >= 3.10`` and ``Django>=4.2,<6.0``. Without them pip installed
+    on interpreters the package cannot run on.
+  - Declared the readme content type, replaced the deprecated license classifier with the
+    ``BSD-3-Clause`` SPDX expression, and declared the templates, static files and locale
+    catalogues as package data.
+
+  Compatibility
+  - Support asserted for Python 3.10 to 3.13 and Django 4.2 to 5.2, exercised by a CI matrix
+    over the fourteen supported combinations. Django 4.2 and 5.0 do not support Python 3.13.
+  - Removed the Python 2 residue and the dead ``Django < 2.1`` version gates.
+
+  Fixes
+  - ``use_for_concrete = True`` raised ``AttributeError`` instead of rendering, because
+    ``concrete_model`` is a model class and its options come from ``_meta``.
+  - Excluding an app no longer leaves an empty "other permissions" column behind, along with a
+    colspan one cell too wide.
+  - Registration errors are no longer caught by a bare ``except`` that reported every failure
+    as an ``INSTALLED_APPS`` ordering problem. Only the registration exceptions are translated,
+    and the original cause is chained.
+  - The leftover permission lookup no longer scans a list per choice, which made it quadratic
+    in the number of permissions.
+
+  Tests
+  - The two remaining tests and the six commented out Selenium ones were replaced by a suite
+    covering the template context, the rendering of both admin screens, the exclusion settings,
+    the ``get_extra_permissions()`` hook and the distribution metadata. What the suite cannot
+    reach without a browser is stated in the README.
+
+ v 3.0.0 (25 September 2024)
+  First release of the independent fork, carrying work that had been kept on top of upstream
+  without ever being recorded here.
+  - The widget renders through ``get_context()`` and ``template_name`` rather than overriding
+    ``render()``. This is what makes the table extensible: ``template_name`` wraps the packaged
+    table and ``base_template_name`` replaces the underlying select.
+  - Added the ``extra_permissions`` setting and the ``get_extra_permissions()`` hook, for
+    permissions that are not declared in ``Meta.permissions``.
+  - The select-all handlers are bound per table and driven by ``data-permission``, so extra
+    permission columns work as well; column and row states are synced on load.
+  - Content types are resolved in a single query instead of one per model.
+  - A widget rendered more than once keeps its original choices.
+  - Added the pt_BR locale and the metadata that makes the table searchable.
+
  v 2.9.3 (19 April 2024)
   - Fix: Submit event handler in FilteredSelectMultiple removes selected options from tabular_permissions #27 (@DemidovEvg)
   - Fix error caused by non-existent model.label #26 (@SteMazzO)

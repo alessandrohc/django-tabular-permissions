@@ -1,7 +1,6 @@
 from collections import OrderedDict
 from itertools import chain
 
-from django import VERSION
 from django.apps import apps
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth import get_permission_codename
@@ -18,15 +17,41 @@ from .helpers import get_perm_name
 
 
 def get_reminder_permissions_iterator(choices, reminder_perms):
-    reminder_perms_list = reminder_perms.values()
-    l = []
-    for c in choices:
-        if c[0] in reminder_perms_list:
-            l.append(c)
-    return l
+    """
+    Pair the leftover permission ids back with the choices that carry them.
+
+    Membership is tested against a set: an install with a few thousand permissions runs this
+    once per choice, and the previous scan over dict_values made it quadratic.
+    ModelChoiceIteratorValue, the value a model form field yields, hashes as the value it
+    wraps, so it matches the plain ids collected from the database.
+    """
+    reminder_ids = set(reminder_perms.values())
+    return [choice for choice in choices if choice[0] in reminder_ids]
 
 
 class TabularPermissionsWidget(FilteredSelectMultiple):
+    """
+    Renders the permissions of every installed model as a table of checkboxes.
+
+    Two templates are involved, and the split is what makes the widget extensible:
+
+    ``template_name`` is the outer template, taken from the ``template`` setting. It receives
+    the assembled table under ``widget.table`` and is free to wrap it in anything.
+    ``base_template_name`` renders the underlying multiple select, which still carries the
+    actual form value: the table is decoration, and the checkboxes are copied into that select
+    on submit by tabular_permissions.js.
+
+    A consumer typically points ``template_name`` at a template of its own that reaches the
+    packaged table through ``{% extends widget.table.template_name %}``, fills the
+    ``extra_permission_headers`` and ``extra_permission_rows`` blocks, overrides
+    ``base_template_name`` with its own select widget, and overrides
+    :meth:`get_extra_permissions` to feed those blocks.
+
+    Permissions the table cannot represent, such as ones created by hand with no model behind
+    them, stay assignable through the plain select, and ``hide_original`` reports whether any
+    such leftover exists.
+    """
+
     # Template that renders the widget
     base_template_name = "django/forms/widgets/select.html"
     # Template that renders the table and includes the widget
@@ -41,18 +66,31 @@ class TabularPermissionsWidget(FilteredSelectMultiple):
 
     def get_extra_permissions(self, model, ct_id, codename_id_map):
         """
-        :param model:
-        :param ct_id:
-        :param codename_id_map:
-        :return: dict {
-            'codename': codename,
-            'verbose_name': verbose_name,
-            'c_perm_id': c_perm_id
-        }
+        Hook for permissions that belong in the table but are not declared on the model.
+
+        A subclass overrides this to add columns of its own, for permissions created outside
+        ``Meta.permissions``. Whatever is returned lands in the model entry under
+        ``extra_permissions``, is excluded from the leftover select, and counts as managed.
+
+        :param model: the model class the row is being built for
+        :param ct_id: pk of the ContentType for that model
+        :param codename_id_map: ``{'<codename>_<content_type_id>': permission_id}`` for every
+            permission in the database, to resolve ids without extra queries
+        :return: a sequence of dicts, each with at least ``codename``, ``verbose_name`` and
+            ``c_perm_id``. ``c_perm_id`` is falsy when the permission has no row in the
+            database, and the template renders an empty cell for it.
         """
         return ()
 
     def get_table_context(self, name, value, attrs):
+        """
+        Assemble the table handed to the template as ``widget.table``.
+
+        Note that this mutates the widget: ``self.choices`` is narrowed to the leftover
+        permissions so the underlying select offers only what the table cannot show, with the
+        full list preserved in ``self.org_choices`` so a second render still computes from the
+        complete set. ``self.managed_perms`` and ``self.hide_original`` are filled here too.
+        """
         choices = self.choices if self.org_choices is None else self.org_choices
         apps_available = OrderedDict()  # []  # main container to send to template
         user_permissions = Permission.objects.filter(id__in=value or []).values_list('id', flat=True)
@@ -69,13 +107,18 @@ class TabularPermissionsWidget(FilteredSelectMultiple):
         # a global flag to either show or hide the other permission column in the table
         custom_permissions_available = False
 
+        # Content types are resolved once up front, because get_for_model() per model turns
+        # into one query per installed model on a cold cache.
         cache_content_type = {}
         for ct in ContentType.objects.all():
             model = ct.model_class()
             if model:
                 opts = model._meta
                 if USE_FOR_CONCRETE:
-                    opts = model._meta.concrete_model
+                    # concrete_model is the model class, so _meta is required to get options
+                    # from it. Dropping it does not fail loudly: app_label resolves to a field
+                    # descriptor on the class and only the next attribute raises.
+                    opts = model._meta.concrete_model._meta
 
                 cache_key = (opts.app_label, opts.model_name)
                 cache_content_type[cache_key] = ct
@@ -92,7 +135,8 @@ class TabularPermissionsWidget(FilteredSelectMultiple):
                 model = app.models[model_name]
                 opts = model._meta
                 if USE_FOR_CONCRETE:
-                    opts = model._meta.concrete_model
+                    # See the note above: concrete_model is a class, _meta holds the options.
+                    opts = model._meta.concrete_model._meta
                 cache_key = (opts.app_label, opts.model_name)
 
                 ct_obj = cache_content_type.get(cache_key)
@@ -130,7 +174,6 @@ class TabularPermissionsWidget(FilteredSelectMultiple):
                     )
 
                 if opts.permissions or extra_default_permissions:
-                    custom_permissions_available = True
                     for codename, perm_name in chain(opts.permissions, extra_default_permissions):
                         c_perm_id = codename_id_map.get(f'{codename}_{ct_id}', False)
                         verbose_name = TRANSLATION_FUNC(codename, perm_name, ct_id)
@@ -166,6 +209,13 @@ class TabularPermissionsWidget(FilteredSelectMultiple):
                     if app.label in EXCLUDE_APPS or model_name in EXCLUDE_MODELS or EXCLUDE_FUNCTION(model):
                         continue
 
+                    # Only a model that survived the exclusion may turn the column on.
+                    # Flagging it earlier rendered a header with nothing but empty cells
+                    # under it whenever the only models declaring custom permissions were
+                    # excluded, and widened colspan to match a column that was not there.
+                    if model_custom_permissions:
+                        custom_permissions_available = True
+
                     app_dict['models'][model_name] = {
                         'model_name': model_name,
                         'model': model,
@@ -186,12 +236,10 @@ class TabularPermissionsWidget(FilteredSelectMultiple):
 
             if app.models:
                 apps_available[app.label] = app_dict
-        if VERSION >= (2, 1, 0) and custom_permissions_available:
-            colspan = 7
-        elif VERSION >= (2, 1, 0) or custom_permissions_available:
-            colspan = 6
-        else:
-            colspan = 5
+
+        # app + model + view + add + change + delete, plus the other-permissions column when
+        # some visible model declares one.
+        colspan = 7 if custom_permissions_available else 6
 
         apps_available = APPS_CUSTOMIZATION_FUNC(apps_available)
 
@@ -211,7 +259,10 @@ class TabularPermissionsWidget(FilteredSelectMultiple):
             'input_name': self.input_name,
             'custom_permissions_available': custom_permissions_available,
             'colspan': colspan,
-            'django_supports_view_permissions': VERSION >= (2, 1, 0),
+            # Every supported Django release ships the view permission. The key is kept so an
+            # existing custom table template does not lose its view column, but it is a
+            # constant now and new templates should not branch on it.
+            'django_supports_view_permissions': True,
             'reminder_choices': reminder_choices
         }
         if self.org_choices is None:
@@ -220,6 +271,8 @@ class TabularPermissionsWidget(FilteredSelectMultiple):
         return ctx
 
     def get_context(self, name, value, attrs):
+        # The table is built before super(), because get_table_context() narrows self.choices
+        # and the parent has to render the select from the narrowed list.
         ctx = self.get_table_context(name, value, attrs)
         context = super().get_context(name, value, attrs)
         context['widget']['base_template_name'] = self.base_template_name

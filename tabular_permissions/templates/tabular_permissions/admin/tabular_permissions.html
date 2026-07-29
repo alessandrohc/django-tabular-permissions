@@ -5,7 +5,6 @@
     <tr>
         <th class="tabular_perms_header"> {% trans 'application'|capfirst %}</th>
         <th class="tabular_perms_header">{% trans 'model'|capfirst %}</th>
-        {% if widget.table.django_supports_view_permissions %}
         <th class="tabular_perms_header">
             {% trans 'View' %}
             <div>
@@ -14,7 +13,6 @@
                 {% trans 'All' %}
             </div>
         </th>
-        {% endif %}
         <th class="tabular_perms_header">
             {% trans 'Add' %}
             <div>
@@ -70,7 +68,6 @@
                         {#                        </label>#}
                     </div>
                 </td>
-                {% if widget.table.django_supports_view_permissions %}
                 <td class="view">
                     {% if model.view_perm_id %}
                         <div class="input">
@@ -84,7 +81,6 @@
                         </div>
                     {% endif %}
                 </td>
-                {% endif %}
                 <td class="add">
                     {% if model.add_perm_id %}
                         <div class="input">

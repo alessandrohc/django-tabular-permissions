@@ -1,4 +1,16 @@
 # coding=utf-8
+"""
+Resolved configuration for the app, read from TABULAR_PERMISSIONS_CONFIG.
+
+Everything here is computed once, at import time, and the dotted paths are resolved into the
+callables themselves. Two consequences worth knowing:
+
+- ``override_settings`` has no effect on these values. A test that needs a different exclusion
+  or a different hook has to patch the name in the module that imported it, typically
+  ``tabular_permissions.widgets``, which is where the code actually reads it from.
+- the settings have to be in place before this module is first imported, so a project that
+  builds TABULAR_PERMISSIONS_CONFIG at runtime has to do it before the app registry loads.
+"""
 from django.conf import settings
 from django.utils.module_loading import import_string
 

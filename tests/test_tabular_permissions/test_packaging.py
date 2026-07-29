@@ -7,6 +7,7 @@ happily installs on an unsupported interpreter, and a missing package-data patte
 up as a TemplateDoesNotExist on someone else's deploy.
 """
 
+import io
 import re
 from pathlib import Path
 
@@ -180,6 +181,30 @@ class PackageDataTest(test.SimpleTestCase):
         for needed in ('templates', 'static', 'locale'):
             self.assertIn(needed, joined,
                           msg=f'{needed} must be declared or it will not ship')
+
+
+class LongDescriptionTest(test.SimpleTestCase):
+    """
+    The readme has to render, because it is the long_description.
+
+    Broken markup does not fail the build: it fails ``twine check``, and on PyPI it would
+    render as nothing. Checking it here means an editing slip is caught before a push.
+    """
+
+    def test_readme_renders_as_restructuredtext(self):
+        readme = ROOT / 'README.rst'
+        self.assertTrue(readme.is_file())
+        try:
+            from readme_renderer.rst import render
+        except ModuleNotFoundError:  # pragma: no cover
+            self.skipTest('readme_renderer not installed')
+
+        # render() returns None on broken markup and writes the docutils diagnostics to the
+        # stream, so the stream is what carries a usable message.
+        diagnostics = io.StringIO()
+        rendered = render(readme.read_text(encoding='utf-8'), stream=diagnostics)
+        self.assertIsNotNone(
+            rendered, msg=f'README.rst does not render:\n{diagnostics.getvalue()}')
 
 
 class ManifestTest(test.SimpleTestCase):

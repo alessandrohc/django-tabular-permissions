@@ -1,3 +1,4 @@
 pyquery
 coverage
+readme_renderer
 tomli; python_version < "3.11"

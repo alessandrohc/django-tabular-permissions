@@ -184,6 +184,7 @@ With Coverage ::
 
         coverage run --source=../tabular_permissions runtests.py
         coverage report -m
+        coverage html
 
 What the suite does not cover
 .............................
@@ -193,7 +194,6 @@ checkboxes and the submit handler that copies the table state into the plain wid
 a real browser. The suite covers everything the server produces, including the ids, classes
 and data attributes the script keys off, so a rename that would break the script fails a test.
 The clicking itself does not.
-        coverage html
 
 
 .. _Credits:

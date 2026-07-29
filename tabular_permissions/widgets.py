@@ -1,10 +1,10 @@
-from __future__ import unicode_literals
-
 from collections import OrderedDict
+from itertools import chain
 
 from django import VERSION
 from django.apps import apps
 from django.contrib.admin.widgets import FilteredSelectMultiple
+from django.contrib.auth import get_permission_codename
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.utils.encoding import force_str
@@ -33,7 +33,7 @@ class TabularPermissionsWidget(FilteredSelectMultiple):
     template_name = TEMPLATE
 
     def __init__(self, attrs=None, choices=(), verbose_name=None, is_stacked=False, input_name='user_permissions'):
-        super(TabularPermissionsWidget, self).__init__(verbose_name, is_stacked, attrs, choices)
+        super().__init__(verbose_name, is_stacked, attrs, choices)
         self.managed_perms = []
         self.input_name = input_name  # in case of UserAdmin, it's 'user_permissions', GroupAdmin it's 'permissions'
         self.hide_original = True
@@ -57,10 +57,10 @@ class TabularPermissionsWidget(FilteredSelectMultiple):
         apps_available = OrderedDict()  # []  # main container to send to template
         user_permissions = Permission.objects.filter(id__in=value or []).values_list('id', flat=True)
         all_perms = Permission.objects.all().values('id', 'codename', 'content_type_id').order_by('codename')
-        excluded_perms = set([])
+        excluded_perms = set()
         codename_id_map = {}
         for p in all_perms:
-            codename_id_map['%s_%s' % (p['codename'], p['content_type_id'])] = p['id']
+            codename_id_map[f"{p['codename']}_{p['content_type_id']}"] = p['id']
 
         # reminder_perms used to detect if the tabular permissions covers all permissions,
         # if true, we don't need to make the default widget visible.
@@ -106,18 +106,33 @@ class TabularPermissionsWidget(FilteredSelectMultiple):
                 change_perm_name = get_perm_name(model_name, 'change')
                 delete_perm_name = get_perm_name(model_name, 'delete')
 
-                view_perm_id = (codename_id_map.get('%s_%s' % (view_perm_name, ct_id), False)
+                view_perm_id = (codename_id_map.get(f'{view_perm_name}_{ct_id}', False)
                                 if 'view' in opts.default_permissions else False)
-                add_perm_id = (codename_id_map.get('%s_%s' % (add_perm_name, ct_id), False)
+                add_perm_id = (codename_id_map.get(f'{add_perm_name}_{ct_id}', False)
                                if 'add' in opts.default_permissions else False)
-                change_perm_id = (codename_id_map.get('%s_%s' % (change_perm_name, ct_id), False)
+                change_perm_id = (codename_id_map.get(f'{change_perm_name}_{ct_id}', False)
                                   if 'change' in opts.default_permissions else False)
-                delete_perm_id = (codename_id_map.get('%s_%s' % (delete_perm_name, ct_id), False)
+                delete_perm_id = (codename_id_map.get(f'{delete_perm_name}_{ct_id}', False)
                                   if 'delete' in opts.default_permissions else False)
-                if opts.permissions:
+
+                # default_permissions may declare actions beyond the four that get their own
+                # column. Those are surfaced in the "other permissions" column; without this
+                # they would silently fall through to the leftover widget.
+                extra_default_permissions = []
+                for action in opts.default_permissions:
+                    if action in {'view', 'add', 'change', 'delete'}:
+                        continue
+                    extra_default_permissions.append(
+                        (
+                            get_permission_codename(action, opts),
+                            'Can %s %s' % (action, opts.verbose_name_raw),
+                        )
+                    )
+
+                if opts.permissions or extra_default_permissions:
                     custom_permissions_available = True
-                    for codename, perm_name in opts.permissions:
-                        c_perm_id = codename_id_map.get('%s_%s' % (codename, ct_id), False)
+                    for codename, perm_name in chain(opts.permissions, extra_default_permissions):
+                        c_perm_id = codename_id_map.get(f'{codename}_{ct_id}', False)
                         verbose_name = TRANSLATION_FUNC(codename, perm_name, ct_id)
                         model_custom_permissions.append(
                             (codename, verbose_name, c_perm_id)
@@ -134,16 +149,16 @@ class TabularPermissionsWidget(FilteredSelectMultiple):
                     excluded_perm_ids.extend([perm['c_perm_id'] for perm in extra_permissions])
                     excluded_perms.update(excluded_perm_ids)
 
-                    reminder_perms.pop('%s_%s' % (view_perm_name, ct_id), False)
-                    reminder_perms.pop('%s_%s' % (add_perm_name, ct_id), False)
-                    reminder_perms.pop('%s_%s' % (change_perm_name, ct_id), False)
-                    reminder_perms.pop('%s_%s' % (delete_perm_name, ct_id), False)
+                    reminder_perms.pop(f'{view_perm_name}_{ct_id}', False)
+                    reminder_perms.pop(f'{add_perm_name}_{ct_id}', False)
+                    reminder_perms.pop(f'{change_perm_name}_{ct_id}', False)
+                    reminder_perms.pop(f'{delete_perm_name}_{ct_id}', False)
 
                     for c, v, _id in model_custom_permissions:
-                        reminder_perms.pop('%s_%s' % (c, ct_id), False)
+                        reminder_perms.pop(f'{c}_{ct_id}', False)
 
                     for perm in extra_permissions:
-                        reminder_perms.pop('%s_%s' % (perm['codename'], ct_id), False)
+                        reminder_perms.pop(f"{perm['codename']}_{ct_id}", False)
 
                     # Because the logic of exclusion should/would work on both the tabular_permissin widget
                     # and the normal widget
@@ -154,6 +169,7 @@ class TabularPermissionsWidget(FilteredSelectMultiple):
                     app_dict['models'][model_name] = {
                         'model_name': model_name,
                         'model': model,
+                        'label': force_str(model._meta.label_lower.replace('.', '_')),
                         'verbose_name_plural': force_str(opts.verbose_name_plural),
                         'verbose_name': force_str(opts.verbose_name),
                         'view_perm_id': view_perm_id,

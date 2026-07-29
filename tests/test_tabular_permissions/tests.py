@@ -1,4 +1,3 @@
-from __future__ import unicode_literals
 from django import test
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
@@ -124,7 +123,7 @@ class TabularPermissionsTestCase(test.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        super(TabularPermissionsTestCase, cls).setUpClass()
+        super().setUpClass()
         cls.user = User.objects.create_superuser(username='super', password='secret', email='email@domain.com')
 
     def test_visible_on_group_admin(self):
@@ -132,7 +131,7 @@ class TabularPermissionsTestCase(test.TestCase):
             Test tabular_permissions visible on GroupAdmin with right data-input-name
             """
             self.client.login(username='super', password='secret')
-            response = self.client.get((reverse('admin:auth_group_add')))
+            response = self.client.get(reverse('admin:auth_group_add'))
             self.assertEqual(response.status_code, 200)
             doc = pq(response.content)
             table = doc.find('#tabular_permissions')
@@ -149,3 +148,8 @@ class TabularPermissionsTestCase(test.TestCase):
         doc = pq(response.content)
         table = doc.find('[name=user_permissions]')
         self.assertEqual(len(table), 1)
+        # The id carries the model label, so it is unique across apps. Upstream asserted
+        # "#id__can_do_something" here, which is the id produced *before* the model label
+        # was added to the widget context -- the assertion outlived the fix.
+        custom_perm = doc.find("#id_custom_models_modelwithcustompermissions_can_do_something")
+        self.assertEqual(len(custom_perm), 1)

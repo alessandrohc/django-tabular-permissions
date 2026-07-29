@@ -33,23 +33,30 @@ window.onload = function() {
                 }).length);
             });
 
-            $('form').on('submit', function () {
-                var user_perms = [];
-                var table_permissions = $table;
-                var input_name = table_permissions.attr('data-input-name');
-                table_permissions.find("input[type=checkbox]").not('.select-all').each(function (i, elem) {
-                    var $elem = $(elem);
-                    if ($(elem).prop('checked')) {
-                        user_perms.push($elem.attr('data-perm-id'))
-                    }
+            // Registering the submit handler is deferred on purpose. FilteredSelectMultiple
+            // also binds a submit handler that keeps only the options present in its own
+            // cache, so a handler registered before it has its options stripped again.
+            // Deferring puts this one last, after the cleanup, so the permissions picked in
+            // the table survive the submit.
+            setTimeout(function () {
+                $('form').on('submit', function () {
+                    var user_perms = [];
+                    var table_permissions = $table;
+                    var input_name = table_permissions.attr('data-input-name');
+                    table_permissions.find("input[type=checkbox]").not('.select-all').each(function (i, elem) {
+                        var $elem = $(elem);
+                        if ($(elem).prop('checked')) {
+                            user_perms.push($elem.attr('data-perm-id'))
+                        }
+                    });
+                    var user_group_permissions = $('[name=' + input_name +']');
+                    var output = [];
+                    $.each(user_perms, function (key, value) {
+                        output.push('<option value="' + value + '" selected="selected" style="display:none"></option>');
+                    });
+                    user_group_permissions.append(output);
                 });
-                var user_group_permissions = $('[name=' + input_name +']');
-                var output = [];
-                $.each(user_perms, function (key, value) {
-                    output.push('<option value="' + value + '" selected="selected" style="display:none"></option>');
-                });
-                user_group_permissions.append(output);
-            })
+            }, 0);
         })
     })(django.jQuery);
 };

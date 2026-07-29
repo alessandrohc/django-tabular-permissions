@@ -1,3 +1,4 @@
+
 django-tabular-permissions
 ##########################
 Display django permissions in a user friendly, translatable and customizable widget .
@@ -19,7 +20,7 @@ Features:
 * Customize which apps, models to show in the permissions table. You can also set a exclude function for high-end customization.
 * RTL ready, Bootstrap ready.
 * Easy customize-able look.
-* Python 2.7, 3.6, 3.7, 3.8, 3.9 , 3.10. Django 1.11, 2.1, 2.2, 3.0, 3.1, 3.2 , 4.0, 4.1.
+* Python 2.7, 3.6, 3.7, 3.8, 3.9 , 3.10. Django 1.11, 2.1, 2.2, 3.0, 3.1, 3.2 , 4.0, 4.1, 4.2
 * Default `FilteredSelectMultiple` widget will appear only if you have custom permissions that are not model related (ie directly created by code or hand)
 
 
@@ -159,7 +160,23 @@ To run the demo project in the repo on your local you need
 4. `python manage.py migrate`
 5. `python manage.py runserver`
 
-Enjoy and feel free to report any bugs or make pull requests.
+
+Tests
+-----
+
+To run the tests, you need to install the test requirements::
+
+    cd tests
+    pip install -r requirements.txt
+
+Then run::
+
+    python runtests.py
+
+With Coverage ::
+
+        coverage run runtests.py
+        coverage html
 
 
 .. _Credits:

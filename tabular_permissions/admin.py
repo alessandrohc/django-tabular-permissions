@@ -8,10 +8,10 @@ from . import app_settings
 User = get_user_model()
 
 
-class UserTabularPermissionsMixin(object):
+class UserTabularPermissionsMixin:
 
     def formfield_for_manytomany(self, db_field, request=None, **kwargs):
-        field = super(UserTabularPermissionsMixin, self).formfield_for_manytomany(db_field, request, **kwargs)
+        field = super().formfield_for_manytomany(db_field, request, **kwargs)
         if db_field.name == 'user_permissions':
             field.widget = TabularPermissionsWidget(verbose_name=db_field.verbose_name,
                                                     is_stacked=db_field.name in self.filter_vertical)
@@ -19,9 +19,9 @@ class UserTabularPermissionsMixin(object):
         return field
 
 
-class GroupTabularPermissionsMixin(object):
+class GroupTabularPermissionsMixin:
     def formfield_for_manytomany(self, db_field, request=None, **kwargs):
-        field = super(GroupTabularPermissionsMixin, self).formfield_for_manytomany(db_field, request, **kwargs)
+        field = super().formfield_for_manytomany(db_field, request, **kwargs)
         if db_field.name == 'permissions':
             field.widget = TabularPermissionsWidget(verbose_name=db_field.verbose_name,
                                                     is_stacked=db_field.name in self.filter_vertical,
@@ -32,12 +32,12 @@ class GroupTabularPermissionsMixin(object):
 
 try:
     UserAdminModel = admin.site._registry[User].__class__
-except:
+except:  # pragma: no cover
     UserAdminModel = DjUserAdmin
 
 try:
     GroupAdminModel = admin.site._registry[Group].__class__
-except:
+except:  # pragma: no cover
     GroupAdminModel = DjGroupAdmin
 
 
@@ -57,5 +57,6 @@ if app_settings.AUTO_IMPLEMENT:
         admin.site.register(Group, TabularPermissionsGroupAdmin)
 
     except:
-        raise ImproperlyConfigured('Please make sure that django.contrib.auth '
-                                   'comes before tabular_permissions in INSTALLED_APPS')
+        raise ImproperlyConfigured(
+            'Please make sure that django.contrib.auth (Or the app containing your custom User model) '
+            'comes before tabular_permissions in INSTALLED_APPS; Or set AUTO_IMPLEMENT to False in your settings.')

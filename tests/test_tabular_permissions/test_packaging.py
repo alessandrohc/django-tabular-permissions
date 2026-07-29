@@ -1,10 +1,10 @@
 """
 Coverage for the distribution metadata.
 
-These assertions describe the target state of the packaging work, so they fail until
-pyproject.toml lands. They exist because the failure mode of bad packaging is silent: pip
-happily installs on an unsupported interpreter, and a missing package-data pattern only shows
-up as a TemplateDoesNotExist on someone else's deploy.
+These exist because the failure modes of bad packaging are quiet ones: pip installs happily on
+an interpreter the code cannot run on, a missing package-data pattern only surfaces as a
+TemplateDoesNotExist on someone else's deploy, and broken readme markup builds without
+complaint and then renders as nothing.
 """
 
 import io
@@ -25,7 +25,7 @@ PYPROJECT = ROOT / 'pyproject.toml'
 
 # Lower bound of the declared support matrix.
 MIN_PYTHON = (3, 10)
-EXPECTED_VERSION = '3.1.0'
+EXPECTED_VERSION = '3.1.1'
 
 
 def load_pyproject():

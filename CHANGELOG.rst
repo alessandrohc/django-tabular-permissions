@@ -1,6 +1,14 @@
 ----------
 CHANGELOG
 ----------
+ v 3.1.1 (29 July 2026)
+  - Fixed the readme markup that made ``twine check`` fail on 3.1.0. A literal block had lost
+    its last line to an edit, which left an indented line stranded after the paragraph that
+    followed, and docutils rejects that. The build succeeded either way, so the only symptom
+    was that the long_description would have rendered as nothing.
+  - The suite now renders ``README.rst`` through readme_renderer, the library twine uses, so
+    broken markup fails a test rather than only the packaging job.
+
  v 3.1.0 (29 July 2026)
   Packaging
   - Added ``pyproject.toml`` with a PEP 517 build backend and removed ``setup.py``. The

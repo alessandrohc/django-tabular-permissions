@@ -10,7 +10,7 @@ See `Credits`_ for the upstream authors.
 
 Version
 -------
-3.1.0
+3.1.1
 
 Features:
 ---------
@@ -33,7 +33,7 @@ Install this fork straight from the repository::
 
 Pin a tag for a reproducible install::
 
-    pip install git+https://github.com/alessandrohc/django-tabular-permissions.git@v3.1.0
+    pip install git+https://github.com/alessandrohc/django-tabular-permissions.git@v3.1.1
 
 .. note::
    ``pip install django-tabular-permissions`` pulls the **original** package from PyPI,

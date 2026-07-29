@@ -1,0 +1,24 @@
+{# Mirrors the consumer pattern: extend the packaged table through the context key and
+   fill the two extension blocks with the extra permission columns. #}
+{% extends widget.table.template_name %}
+
+{% block extra_permission_headers %}
+    {% for perm_name, perm_label in widget.table.extra_permissions.items %}
+        <th class="extra-permission-header" data-permission="{{ perm_name }}">{{ perm_label }}</th>
+    {% endfor %}
+{% endblock %}
+
+{% block extra_permission_rows %}
+    {% for perm in model.extra_permissions %}
+        <td class="extra-permission-cell {{ perm.perm_name }}">
+            {% if perm.c_perm_id %}
+                <input type="checkbox" class="checkbox extra model-{{ model.model_name }}"
+                       id="id_{{ model.label }}_{{ perm.codename }}"
+                       data-perm-id="{{ perm.c_perm_id }}"
+                        {% if perm.c_perm_id in widget.table.user_permissions %}
+                       checked="checked"
+                        {% endif %}>
+            {% endif %}
+        </td>
+    {% endfor %}
+{% endblock %}

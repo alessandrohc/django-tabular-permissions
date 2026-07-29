@@ -1,0 +1,79 @@
+name: tests
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13']
+        django-version: ['4.2', '5.0', '5.1', '5.2']
+        exclude:
+          # Django 4.2 and 5.0 do not support Python 3.13.
+          - python-version: '3.13'
+            django-version: '4.2'
+          - python-version: '3.13'
+            django-version: '5.0'
+
+    name: py${{ matrix.python-version }} / dj${{ matrix.django-version }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "Django~=${{ matrix.django-version }}.0"
+          python -m pip install -r tests/requirements.txt
+
+      - name: Report the resolved versions
+        run: python -c "import sys, django; print('python', sys.version); print('django', django.get_version())"
+
+      - name: Run the suite
+        working-directory: tests
+        run: python runtests.py
+
+  package:
+    runs-on: ubuntu-latest
+    name: package metadata
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Build the distributions
+        run: |
+          python -m pip install --upgrade pip build twine
+          python -m build
+
+      - name: Validate the metadata
+        run: python -m twine check dist/*
+
+      - name: Confirm the templates, static files and catalogues ship
+        run: |
+          python - <<'PY'
+          import glob, sys, zipfile
+          names = zipfile.ZipFile(glob.glob('dist/*.whl')[0]).namelist()
+          required = [
+              'tabular_permissions/templates/tabular_permissions/admin/tabular_permissions.html',
+              'tabular_permissions/static/tabular_permissions/tabular_permissions.js',
+          ]
+          missing = [name for name in required if name not in names]
+          if missing:
+              sys.exit(f'missing from the wheel: {missing}')
+          if not any('/locale/' in name for name in names):
+              sys.exit('no locale catalogue shipped')
+          print('wheel carries every non-Python file')
+          PY

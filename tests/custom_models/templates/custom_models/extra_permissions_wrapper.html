@@ -1,0 +1,5 @@
+{# The widget template_name points here, and the table arrives through an include, so the
+   full wrapper -> include -> extends chain used by consumers is exercised. #}
+<div id="wrapper-marker" data-input-name="{{ widget.table.input_name }}">
+    {% include "custom_models/extra_permissions_table.html" %}
+</div>

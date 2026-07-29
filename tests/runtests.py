@@ -7,11 +7,10 @@ from django.conf import settings
 from django.test.utils import get_runner
 
 if __name__ == "__main__":
-    os.environ['DJANGO_SETTINGS_MODULE'] = 'test_settings'
-    os.environ['DJANGO_SELENIUM_TESTS'] = 'True'
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'test_settings')
 
     django.setup()
     TestRunner = get_runner(settings)
-    test_runner = TestRunner()
-    failures = test_runner.run_tests(["tests"])
+    test_runner = TestRunner(verbosity=int(os.environ.get('VERBOSITY', 1)))
+    failures = test_runner.run_tests(sys.argv[1:] or ["tests"])
     sys.exit(bool(failures))
